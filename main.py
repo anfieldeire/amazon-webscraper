@@ -4,16 +4,15 @@ import csv
 import datetime
 from datetime import date
 import sqlite3
-conn = sqlite3.connect('amazon_prices.db')
-c = conn.cursor()
+from database import INSERT_PRODUCTS, PRICE_CHECK
+from database import connection as conn
+# conn = sqlite3.connect('amazon_prices.db')
+# c = conn.cursor()
 
 '''https://www.geeksforgeeks.org/how-to-compare-rows-and-columns-in-the-same-table-in-sql/'''
 
 
-def connection():
-    conn = sqlite3.connect('amazon_prices.db')
-    print("connected")
-    return conn
+
 
 def read_csv():
     # Add check to check that the file has at least one row
@@ -27,7 +26,7 @@ def read_csv():
   return(asins)
 
 
-def product_info():
+def scrape_data(asins):
 
 #    asins = read_csv()
     base_url = 'https://www.amazon.com/dp/'
@@ -64,24 +63,23 @@ def product_info():
 
     return (products_all)
 
-#product_info()
+#scrape_data()
 
-def load_data():
+def load_data(products_al):
 
     conn = sqlite3.connect('amazon_prices.db')
-#    c = conn.cursor()
+
     with conn:
-        products_all = product_info()
+        # products_all = scrape_data()
         if products_all is not None:
             for product_list in products_all:
                 print("product list 1 asin")
                 print(product_list[1]['asin'])
 
-                conn.execute('''INSERT INTO product_data VALUES(?,?,?,?,?,?)''', (
+                conn.execute(INSERT_PRODUCTS, (
                 product_list[1]['asin'], product_list[1]['title'], product_list[1]['scrape_date'], product_list[1]['price'],
                 product_list[1]['rating'], product_list[1]['reviews']))
 
-    #    conn.commit()
     print("data committed")
 
 
@@ -100,11 +98,7 @@ def price_check():
     # todays_date = date.today()
     # print(todays_date)
     todays_date = '2024-02-01'
-    c.execute('''SELECT a.asin AS asin1, a.title AS title1, a.price AS price1, a.scrape_date as date1, b.asin AS asin2, b.title AS title2, b.price AS price2, b.scrape_date as date2,
-            (a.price - b.price) AS difference
-    from product_data a, product_data b
-    WHERE a.price <> b.price AND b.scrape_date =:todays_date
-    AND a.asin = b.asin AND b.price < a.price''', {'todays_date' : todays_date})
+    c.execute(PRICE_CHECK, {'todays_date' : todays_date})
     result_list = c.fetchall()
     print("result list")
     print(result_list)
@@ -153,8 +147,9 @@ def update_data():
 if __name__ == '__main__':
     asins = read_csv()
     if asins is not None:
-        connection()
-    product_info()
+        conn()
+        products_all = scrape_data(asins)
+        load_data(products_all)
 
 
 
