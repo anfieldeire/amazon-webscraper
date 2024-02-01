@@ -4,6 +4,7 @@ import csv
 import datetime
 from datetime import date
 import sqlite3
+import os
 from database import INSERT_PRODUCTS, PRICE_CHECK
 from database import connection as conn
 # conn = sqlite3.connect('amazon_prices.db')
@@ -12,19 +13,26 @@ from database import connection as conn
 '''https://www.geeksforgeeks.org/how-to-compare-rows-and-columns-in-the-same-table-in-sql/'''
 
 
-
-
 def read_csv():
-    # Add check to check that the file has at least one row
-  asins = []
+    ''' Check the file is present in the current dir. Check that the file has data '''
 
-  with open('amazon_asins.csv') as f:
-      csv_reader = csv.reader(f)
-      for row in csv_reader:
-          asins.append(row[0])
+    input_file = 'amazon_asins.csv'
+    asins = []
 
-  return(asins)
+    try:
+        with open(input_file) as f:
+            csv_reader = csv.reader(f)
+            for row in csv_reader:
+                if row == []: # check for empty row
+                    raise ValueError('Empty File')
+                else:
+                    asins.append(row[0])
 
+    except  FileNotFoundError as fnf_error:
+        print(fnf_error)
+    return(asins)
+
+read_csv()
 
 def scrape_data(asins):
 
@@ -65,7 +73,7 @@ def scrape_data(asins):
 
 #scrape_data()
 
-def load_data(products_al):
+def load_data(products_all):
 
     conn = sqlite3.connect('amazon_prices.db')
 
@@ -144,12 +152,12 @@ def update_data():
 #update_data()
 
 
-if __name__ == '__main__':
-    asins = read_csv()
-    if asins is not None:
-        conn()
-        products_all = scrape_data(asins)
-        load_data(products_all)
+# if __name__ == '__main__':
+#     asins = read_csv()
+#     if asins is not None:
+#         conn()
+#         products_all = scrape_data(asins)
+#         load_data(products_all)
 
 
 
