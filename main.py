@@ -10,8 +10,6 @@ from database import connection
 from send_email import create_message, email_message
 
 
-'''https://www.geeksforgeeks.org/how-to-compare-rows-and-columns-in-the-same-table-in-sql/'''
-
 
 def read_csv():
 
