@@ -10,8 +10,6 @@ email_receiver = 'email@gmail.com'
 subject = 'Price Drop Alert'
 
 
-
-
 def create_message(products_all):
     body = 'Price Drop In The Following Products:\n'
     print(products_all)
