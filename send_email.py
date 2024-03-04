@@ -38,10 +38,7 @@ def email_message(products_all, body):
     em['From'] = email_sender
     em['To'] = email_receiver
     em['Subject'] = subject
-
     em.set_content(body)
-
-
     context = ssl.create_default_context()
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
