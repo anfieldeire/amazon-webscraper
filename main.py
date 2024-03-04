@@ -2,18 +2,19 @@ import requests
 from bs4 import BeautifulSoup as bs
 import csv
 import datetime
-from datetime import date
+from datetime import date, timedelta
 import sqlite3
 import os
 from database import INSERT_PRODUCTS, PRICE_CHECK
-from database import connection as conn
-# conn = sqlite3.connect('amazon_prices.db')
-# c = conn.cursor()
+from database import connection
+from send_email import create_message, email_message
+
 
 '''https://www.geeksforgeeks.org/how-to-compare-rows-and-columns-in-the-same-table-in-sql/'''
 
 
 def read_csv():
+
     ''' Check the file is present in the current dir. Check that the file has data '''
 
     input_file = 'amazon_asins.csv'
@@ -36,7 +37,8 @@ read_csv()
 
 def scrape_data(asins):
 
-#    asins = read_csv()
+    ''' Scrape product data from amazon using the asins '''
+
     base_url = 'https://www.amazon.com/dp/'
     headers = {"accept-language": "en-US,en;q=0.9","accept-encoding": "gzip, deflate,"
     " br","User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36",
@@ -57,7 +59,6 @@ def scrape_data(asins):
             product = []
             product_dict = {}
             title = soup.find('span',  {'id': 'productTitle'}).text.strip()
-            #date = datetime.datetime.today()
             today = date.today()
             price = soup.select_one('span.a-price').select_one('span.a-offscreen').text.strip('$')
             rating = soup.find_all('span', {"class": 'a-icon-alt'})[0].text.split()
@@ -71,14 +72,13 @@ def scrape_data(asins):
 
     return (products_all)
 
-#scrape_data()
 
-def load_data(products_all):
+def load_data(products_all, conn):
 
-    conn = sqlite3.connect('amazon_prices.db')
+    ''' load the scraped data into the database once daily '''
 
     with conn:
-        # products_all = scrape_data()
+
         if products_all is not None:
             for product_list in products_all:
                 print("product list 1 asin")
@@ -91,29 +91,18 @@ def load_data(products_all):
     print("data committed")
 
 
-#load_data()
-
-
-def price_check():
+def price_check(conn):
     ''' Run on today and compare todays data with yesterdays for a price drop '''
-
-    conn = sqlite3.connect('amazon_prices.db')
-    c = conn.cursor()
 
     price_drop = 10
     price_drop_perc = (1- (price_drop / 100))
-    # print(price_drop_perc)
-    # todays_date = date.today()
-    # print(todays_date)
-    todays_date = '2024-02-01'
-    c.execute(PRICE_CHECK, {'todays_date' : todays_date})
-    result_list = c.fetchall()
-    print("result list")
-    print(result_list)
-    return
-    print(result_list)
-    products_all = []
+    todays_date = date.today()
+    yest_date = todays_date - timedelta(1)
+    c = conn.cursor()
+    c.execute(PRICE_CHECK, {'todays_date': todays_date, 'yest_date': yest_date})
 
+    result_list = c.fetchall()
+    products_all = []
     product_dict = {}
     if result_list is not None:
         for product in result_list:
@@ -121,21 +110,15 @@ def price_check():
             product = list(product)
             product_dict = {'asin': product[0], 'title': product[1], 'price_before': product[2], 'price_before_date': product[3], 'price_after': product[6], 'price_after_date': product[7] }
             item.append(product_dict)
-            print("product")
-            print(product)
-
             products_all.append(item)
-        print("products all")
-        print(products_all)
-        item = []
 
-    conn.close()
-
-#price_check()
+    return products_all
 
 
 def update_data():
+
     ''' Search for a product by asin and update the price alert percentage '''
+
     conn = sqlite3.connect('amazon_prices.db')
     c = conn.cursor()
 
@@ -152,12 +135,14 @@ def update_data():
 #update_data()
 
 
-# if __name__ == '__main__':
-#     asins = read_csv()
-#     if asins is not None:
-#         conn()
-#         products_all = scrape_data(asins)
-#         load_data(products_all)
+if __name__ == '__main__':
+    asins = read_csv()
+    conn = connection()
+    products_all = scrape_data(asins)
+    load_data(products_all, conn)
+    products_all = price_check(conn)
+    body = create_message(products_all)
+    email_message(products_all, body)
 
 
 
