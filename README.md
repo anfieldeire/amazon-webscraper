@@ -7,7 +7,7 @@ Versions
   
 Virtual Environment Instructions
  - Create the virtual environment: virtualenv amazon-webscraper
- - Activate: activate the virtual environment
+ - Activate: Navigate to the scripts directory and run the activate file to activate the virtual environment
  - Install package dependencies: python -m pip install -r requirements.txt
 
 Email
